@@ -14,7 +14,7 @@ const calcTime = (timestamp) => {
 
 const renderData = (data) => {
   const main = document.querySelector("main");
-  data.reverse().forEach((obj) => {
+  data.reverse().forEach(async (obj) => {
     const div = document.createElement("div");
     div.className = "item-list";
 
@@ -22,7 +22,10 @@ const renderData = (data) => {
     imgDiv.className = "item-list__img";
 
     const img = document.createElement("img");
-    img.src = "assets/img.svg";
+    const res = await fetch(`/images/${obj.id}`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    img.src = url;
 
     const InfoDiv = document.createElement("div");
     InfoDiv.className = "item-list__info";
