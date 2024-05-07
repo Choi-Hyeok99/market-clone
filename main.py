@@ -10,11 +10,18 @@ cur = con.cursor()
 app = FastAPI()
 
 @app.post('/items')
-def create_item(image:UploadFile, 
+async def create_item(image:UploadFile, 
                 title:Annotated[str,Form()], 
                 price:Annotated[int,Form()] , 
                 description: Annotated[str,Form()], 
                 place:Annotated[str,Form()]):
+    
+    image_bytes = await image.read() 
+    cur.execute(f"""
+                INSERT INTO items(title,image,price,description,place)
+                VALUES ('{title}','{image_bytes.hex()}',{price},'{description}','{place}')
+                """)
+    con.commit()
     return '200'
     
     
