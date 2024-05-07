@@ -5,11 +5,14 @@ const form = document.getElementById("write-form");
 const handleSubmitForm = async (event) => {
   // 기본 form 제출 동작을 방지합니다.
   event.preventDefault();
+  const body = new FormData(form);
+  // 세계시간 기준 
+  body.append("insertAt", new Date().getTime());
   try {
     // "/items" 경로로 POST 요청을 보냅니다. 요청 본문에는 form 데이터가 포함됩니다.
     const res = await fetch("/items", {
       method: "POST",
-      body: new FormData(form),
+      body,
     });
     // 서버로부터 받은 응답을 JSON 형식으로 변환합니다.
     const data = await res.json();
@@ -24,4 +27,3 @@ const handleSubmitForm = async (event) => {
 // "submit" 이벤트가 발생했을 때 handleSubmitForm 함수를 호출하도록
 // form 요소에 이벤트 리스너를 추가합니다.
 form.addEventListener("submit", handleSubmitForm);
-
