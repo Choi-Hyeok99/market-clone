@@ -1,4 +1,4 @@
-from fastapi import FastAPI , UploadFile , Form ,Response
+from fastapi import FastAPI , UploadFile , Form ,Response,Depends
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
@@ -20,11 +20,16 @@ manager = LoginManager(SERCRET, '/login')
 
 # 사용자 정보 조회 함수
 @manager.user_loader()
-def query_user(id):
+def query_user(data):
+    WHERE_STATEMENTS = f'id="{data}"'
+    if type(data) == dict:
+        WHERE_STATEMENTS = f'''id="{data['id']}"'''
     # 컬럼명도 결과에 포함되도록 설정
     con.row_factory = sqlite3.Row
     cur = con.cursor()
-    user = cur.execute(f"SELECT * from users WHERE id='{id}'").fetchone()
+    user = cur.execute(f"""
+                       SELECT * from users WHERE {WHERE_STATEMENTS}
+                       """).fetchone()
     return user
 
 # 로그인 엔드포인트
@@ -37,9 +42,11 @@ def login(id: Annotated[str, Form()],
         raise InvalidCredentialsException
     
     access_token = manager.create_access_token(data={
+    'sub':{
         'id': user['id'],
         'name': user['name'],
         'email': user['email']
+        }
     })
     
     return {'access_token': access_token}
@@ -50,12 +57,14 @@ def signup(id: Annotated[str, Form()],
            password: Annotated[str, Form()],
            name: Annotated[str, Form()],
            email: Annotated[str, Form()]):
-    cur.execute(f"INSERT INTO users(id,name,email,password) VALUES ('{id}','{name}','{email}','{password}')")
+    cur.execute(f"""
+                INSERT INTO users(id,name,email,password) VALUES ('{id}','{name}','{email}','{password}')
+                """)
     con.commit()
     return '200'
 
 # items 테이블 생성. 없으면 새로 생성
-cur.execute("""
+cur.execute(f"""
         CREATE TABLE IF NOT EXISTS items (
 	        id INTEGER PRIMARY KEY,
 	        title TEXT NOT NULL,
@@ -76,7 +85,8 @@ async def create_item(image:UploadFile,
                 price:Annotated[int,Form()] , 
                 description: Annotated[str,Form()], 
                 place:Annotated[str,Form()],
-                insertAt:Annotated[int,Form()]
+                insertAt:Annotated[int,Form()],
+                user=Depends(manager)
                 ):
     
     image_bytes = await image.read() # 이미지 파일을 바이트로 읽음
@@ -90,13 +100,14 @@ async def create_item(image:UploadFile,
     
 # 모든 항목 정보 조회 엔드포인트
 @app.get('/items')
-async def get_items():
+async def get_items(user=Depends(manager)):
     # 컬럼명도 결과에 포함되도록 설정
     con.row_factory = sqlite3.Row
     cur = con.cursor()
     rows = cur.execute(f"""
                         SELECT * FROM items;
                         """).fetchall() # 모든 항목 정보 조회
+    
     return JSONResponse(jsonable_encoder(dict(row) for row in rows)) # 조회 결과를 JSON으로 응답
 
 
