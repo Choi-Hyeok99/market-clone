@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi_login import LoginManager
 from fastapi_login.exceptions import InvalidCredentialsException
 from typing import Annotated
+from hashlib import sha256
 import sqlite3
 
 
@@ -13,6 +14,11 @@ con = sqlite3.connect('db.db', check_same_thread=False)
 cur = con.cursor()
 
 app = FastAPI()
+
+# 비밀번호 해시 함수
+def hash_password(password):
+    return sha256(password.encode()).hexdigest()
+
 
 # 비밀키 설정
 SERCRET = 'super-coding'
@@ -37,8 +43,9 @@ def query_user(data):
 def login(id: Annotated[str, Form()],
           password: Annotated[str, Form()]):
     user = query_user(id)
+    hashed_password = hash_password(password) # 입력 받은 비밀번호 해시
     # 유저가 없거나 비밀번호가 틀린 경우 에러 발생
-    if not user or password != user['password']:
+    if not user or hashed_password != user['password']:
         raise InvalidCredentialsException
     
     access_token = manager.create_access_token(data={
@@ -57,6 +64,7 @@ def signup(id: Annotated[str, Form()],
            password: Annotated[str, Form()],
            name: Annotated[str, Form()],
            email: Annotated[str, Form()]):
+    hashed_password = hash_password(password) # 비밀번호 해시
     cur.execute(f"""
                 INSERT INTO users(id,name,email,password) VALUES ('{id}','{name}','{email}','{password}')
                 """)
