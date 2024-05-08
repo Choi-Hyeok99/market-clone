@@ -11,6 +11,8 @@ const handleSubmit = async (event) => {
     body: formData,
   });
   const data = await res.json();
+
+  console.log("액세스토큰", data);
   if (data === "200") {
     alert("로그인 성공");
     console.log(res.status);

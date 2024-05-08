@@ -38,8 +38,14 @@ def login(id:Annotated[str,Form()],
     elif password != user['password']:
         raise InvalidCredentialsException
     
+    access_token = manager.create_access_token(data={
+        'id':user['id'],
+        'name':user['name'],
+        'email':user['email']
+    })
+    
     # 자동으로 200 상태 코드를 내려줌 
-    return 'hi'
+    return {'access_token' : access_token}
     
     
 @app.post('/signup')
