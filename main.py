@@ -9,62 +9,56 @@ import sqlite3
 
 
 # SQLite 데이터베이스 연결 및 커서 생성
-con = sqlite3.connect('db.db',check_same_thread=False)
+con = sqlite3.connect('db.db', check_same_thread=False)
 cur = con.cursor()
 
 app = FastAPI()
 
+# 비밀키 설정
 SERCRET = 'super-coding'
-manager = LoginManager(SERCRET,'/login')
+manager = LoginManager(SERCRET, '/login')
 
-
+# 사용자 정보 조회 함수
 @manager.user_loader()
 def query_user(id):
-    # 컬럼명도 같이 가져와야함
+    # 컬럼명도 결과에 포함되도록 설정
     con.row_factory = sqlite3.Row
     cur = con.cursor()
-    user = cur.execute(f"""
-                        SELECT * from users WHERE id='{id}'
-                       """).fetchone()
+    user = cur.execute(f"SELECT * from users WHERE id='{id}'").fetchone()
     return user
 
+# 로그인 엔드포인트
 @app.post('/login')
-def login(id:Annotated[str,Form()],
-           password:Annotated[str,Form()]):
+def login(id: Annotated[str, Form()],
+          password: Annotated[str, Form()]):
     user = query_user(id)
-    # 유저 X -> 에러 발생
-    if not user:
-        raise InvalidCredentialsException
-    elif password != user['password']:
+    # 유저가 없거나 비밀번호가 틀린 경우 에러 발생
+    if not user or password != user['password']:
         raise InvalidCredentialsException
     
     access_token = manager.create_access_token(data={
-        'id':user['id'],
-        'name':user['name'],
-        'email':user['email']
+        'id': user['id'],
+        'name': user['name'],
+        'email': user['email']
     })
     
-    # 자동으로 200 상태 코드를 내려줌 
-    return {'access_token' : access_token}
-    
-    
+    return {'access_token': access_token}
+
+# 회원가입 엔드포인트
 @app.post('/signup')
-def signup(id:Annotated[str,Form()],
-           password:Annotated[str,Form()],
-           name:Annotated[str,Form()],
-           email:Annotated[str,Form()]):
-    cur.execute(f"""
-                INSERT INTO users(id,name,email,password)
-                VALUES ('{id}','{name}','{email}','{password}')
-                """)
+def signup(id: Annotated[str, Form()],
+           password: Annotated[str, Form()],
+           name: Annotated[str, Form()],
+           email: Annotated[str, Form()]):
+    cur.execute(f"INSERT INTO users(id,name,email,password) VALUES ('{id}','{name}','{email}','{password}')")
     con.commit()
     return '200'
 
 # items 테이블 생성. 없으면 새로 생성
-cur.execute(f"""
+cur.execute("""
         CREATE TABLE IF NOT EXISTS items (
 	        id INTEGER PRIMARY KEY,
-	        title  TEXT NOT NULL,
+	        title TEXT NOT NULL,
 	        image BLOB,
 	        price INTEGER NOT NULL,
 	        description TEXT,
@@ -72,14 +66,6 @@ cur.execute(f"""
 	        insertAt INTEGER NOT NULL
             );
             """)
-
-
-
-
-
-
-
-
 
 
 
