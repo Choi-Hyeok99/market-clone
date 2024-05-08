@@ -24,6 +24,7 @@ const handleSubmit = async (event) => {
       method: "post",
       body: formData,
     });
+    const data = await res.json();
     if (data === "200") {
       div.innerText = "가입에 성공했습니다.";
       div.style.color = "blue";

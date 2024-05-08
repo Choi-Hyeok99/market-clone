@@ -67,8 +67,15 @@ async def get_image(item_id):
         
         
 @app.post('/signup')
-def signup(id:Annotated[str,Form()], password:Annotated[str,Form()]):
-    print(id,password)
+def signup(id:Annotated[str,Form()],
+           password:Annotated[str,Form()],
+           name:Annotated[str,Form()],
+           email:Annotated[str,Form()]):
+    cur.execute(f"""
+                INSERT INTO users(id,name,email,password)
+                VALUES ('{id}','{name}','{email}','{password}')
+                """)
+    con.commit()
     return '200'
 
 # 프론트엔드 파일을 제공하는 정적 파일 서버 마운트
